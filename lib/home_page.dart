@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_osc_client/constants/constants.dart' show AppColors;
+import 'package:flutter_osc_client/pages/home_discovery_page.dart';
+import 'package:flutter_osc_client/pages/home_news_list_page.dart';
+import 'package:flutter_osc_client/pages/home_profile_page.dart';
+import 'package:flutter_osc_client/pages/home_tweet_page.dart';
+import 'package:flutter_osc_client/widget/my_drawer.dart';
 import 'package:flutter_osc_client/widget/navigation_icon_view.dart';
 
 class HomePage extends StatefulWidget {
@@ -9,6 +14,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _appBarTitle = ["资讯", "动弹", "发现", "我的"];
+  final _drawerTitles = ['发布动弹', '动弹小黑屋', '关于', '设置'];
+  final _drawerIcons = [Icons.send, Icons.home, Icons.error, Icons.settings];
+  final _drawerHeadImg = 'assets/images/cover_img.jpg';
+
   List<NavigationIconView> _navigationIconViews;
   var _currentIndex = 0;
   List<Widget> _pages;
@@ -21,10 +30,14 @@ class _HomePageState extends State<HomePage> {
 
     //中间布局
     _pages = [
-      Container(),
-      Container(),
-      Container(),
-      Container(),
+      //资讯页面
+      HomeNewsListPage(),
+      //动弹页面
+      HomeTweetPage(),
+      //发现页面
+      HomeDiscoveryPage(),
+      //我的页面
+      HomeProfilePage(),
     ];
 
     _pageController = PageController(initialPage: _currentIndex);
@@ -61,6 +74,7 @@ class _HomePageState extends State<HomePage> {
           _appBarTitle[_currentIndex],
           style: TextStyle(color: Color(AppColors.APP_BAR)),
         ),
+        iconTheme: IconThemeData(color: Color(AppColors.APP_BAR)),
       ),
       body: PageView.builder(
         //禁止滑动
@@ -89,7 +103,11 @@ class _HomePageState extends State<HomePage> {
               duration: Duration(microseconds: 1), curve: Curves.ease);
         },
       ),
-      drawer: Drawer(),
+      drawer: MyDrawer(
+        headImgPath: _drawerHeadImg,
+        menuIcons: _drawerIcons,
+        menuTitles: _drawerTitles,
+      ),
     );
   }
 }
