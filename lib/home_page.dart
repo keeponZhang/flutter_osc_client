@@ -1,52 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_osc_client/constants/constants.dart' show AppColors;
 import 'package:flutter_osc_client/widget/navigation_icon_view.dart';
 
 class HomePage extends StatefulWidget {
-
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-
   final _appBarTitle = ["资讯", "动弹", "发现", "我的"];
-  List<NavigationIconView> _NavigationIconViews;
+  List<NavigationIconView> _navigationIconViews;
+  var _currentIndex = 0;
+  List<Widget> _pages;
+  PageController _pageController;
 
+  //TODO 在initState()方法中写初始化，必须重新运行Run 不能用热重载
   @override
   void initState() {
     super.initState();
-    _NavigationIconViews=[
+
+    //中间布局
+    _pages = [
+      Container(),
+      Container(),
+      Container(),
+      Container(),
+    ];
+
+    _pageController = PageController(initialPage: _currentIndex);
+
+    //底部
+    _navigationIconViews = [
       NavigationIconView(
-          title: '资讯',
+          title: _appBarTitle[0],
           iconPath: 'assets/images/ic_nav_news_normal.png',
           activeIconPath: 'assets/images/ic_nav_news_actived.png'),
       NavigationIconView(
-          title: '动弹',
+          title: _appBarTitle[1],
           iconPath: 'assets/images/ic_nav_tweet_normal.png',
           activeIconPath: 'assets/images/ic_nav_tweet_actived.png'),
       NavigationIconView(
-          title: '发现',
+          title: _appBarTitle[2],
           iconPath: 'assets/images/ic_nav_discover_normal.png',
           activeIconPath: 'assets/images/ic_nav_discover_actived.png'),
       NavigationIconView(
-          title: '我的',
+          title: _appBarTitle[3],
           iconPath: 'assets/images/ic_nav_my_normal.png',
           activeIconPath: 'assets/images/ic_nav_my_pressed.png'),
     ];
   }
 
-
   @override
   Widget build(BuildContext context) {
+    //SafeArea 可以适配刘海屏等异形屏
     return Scaffold(
       appBar: AppBar(
-        //TODO 标题
-        title: Text("开元中国"),
+        //阴影
+        elevation: 0.0,
+        title: Text(
+          _appBarTitle[_currentIndex],
+          style: TextStyle(color: Color(AppColors.APP_BAR)),
+        ),
       ),
-      body: Container(),
-//      bottomNavigationBar: BottomNavigationBar(
-//        items: NavigationIconView(),
-//      ),
+      body: PageView.builder(
+        //禁止滑动
+        physics: NeverScrollableScrollPhysics(),
+
+        itemBuilder: (BuildContext context, int index) {
+          return _pages[_currentIndex];
+        },
+        controller: _pageController,
+        itemCount: _pages.length,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        items: _navigationIconViews.map((view) => view.item).toList(),
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          _pageController.animateToPage(index,
+              duration: Duration(microseconds: 1), curve: Curves.ease);
+        },
+      ),
+      drawer: Drawer(),
     );
   }
 }
