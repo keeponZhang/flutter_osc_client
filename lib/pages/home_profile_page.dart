@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_osc_client/common/event_bus.dart';
-import 'package:flutter_osc_client/constants/constants.dart' show AppColors;
+import 'package:flutter_osc_client/constants/constants.dart'
+    show AppColors, AppUrls;
 import 'package:flutter_osc_client/pages/login_web_page.dart';
+import 'package:flutter_osc_client/pages/profile_detail_page.dart';
+import 'package:flutter_osc_client/utils/data_utils.dart';
+import 'package:flutter_osc_client/utils/net_utils.dart';
 
 class HomeProfilePage extends StatefulWidget {
   @override
@@ -43,23 +49,62 @@ class _HomeProfilePageState extends State<HomeProfilePage> {
     _showUserInfo();
     //登录成功显示用户信息
     eventBus.on<LoginEvent>().listen((event) {
-
-
+      _getUserInfo();
     });
 
     //退出登录清除用户信息
     eventBus.on<LogoutEvent>().listen((event) {
-
-
+      _showUserInfo();
     });
   }
 
-  _showUserInfo() {}
+  _getUserInfo() {
+    DataUtils.getAccessToken().then((accessToken) {
+      if (accessToken == null) {
+        return;
+      }
+
+      Map<String, dynamic> params = Map<String, dynamic>();
+      params['access_token'] = accessToken;
+      params['dataType'] = 'json';
+      print('accessToken: $accessToken');
+
+      NetUtils.get(AppUrls.OPENAPI_USER, params).then((data) {
+        print('data: $data');
+        //data: {"gender":"female","name":"zb1496904104779","location":"北京","id":3528824,
+        // "avatar":"https://www.oschina.net/img/portrait.gif","email":"48ad1968-8d9f-4be9-aac9-c7bab325d34e",
+        // "url":"https://my.oschina.net/u/3528824"}
+        Map<String, dynamic> map = json.decode(data);
+        if (mounted != null) {
+          setState(() {
+            userAvatar = map['avatar'];
+            userName = map['name'];
+          });
+        }
+        DataUtils.saveUserInfo(map);
+      });
+    });
+  }
+
+  _showUserInfo() {
+    DataUtils.getUserInfo().then((user) {
+      if (mounted) {
+        setState(() {
+          if (user != null) {
+            userAvatar = user.avatar;
+            userName = user.name;
+          } else {
+            userAvatar = null;
+            userName = null;
+          }
+        });
+      }
+    });
+  }
 
   _login() async {
-    var result = Navigator.of(context)
+    final result = await Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) => LoginWebPage()));
-    // ignore: unrelated_type_equality_checks
     if (result != null && result == 'login_success_refresh') {
       //登录成功
       eventBus.fire(LoginEvent());
@@ -106,20 +151,36 @@ class _HomeProfilePageState extends State<HomeProfilePage> {
           children: <Widget>[
             //头像
             GestureDetector(
-              child: Container(
-                width: 60.0,
-                height: 60.0,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.0),
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/ic_avatar_default.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              child: userAvatar != null
+                  ? Container(
+                      width: 60.0,
+                      height: 60.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.0),
+                        image: DecorationImage(
+                          image: NetworkImage(userAvatar),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/ic_avatar_default.png',
+                      width: 60.0,
+                      height: 60.0,
+                    ),
               onTap: () {
-                _login();
+                DataUtils.isLogin().then((isLogin){
+                  if(isLogin){
+                    //详情
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => ProfileDetailPage()));
+                  }else{
+                    //执行登录
+                    _login();
+                  }
+                });
+
               },
             ),
             SizedBox(
@@ -127,7 +188,7 @@ class _HomeProfilePageState extends State<HomeProfilePage> {
             ),
             //用户名
             Text(
-              '点击头像登录',
+              userName ??= '点击头像登录',
               style: TextStyle(color: Colors.white),
             )
           ],

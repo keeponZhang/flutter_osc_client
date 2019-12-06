@@ -15,14 +15,22 @@ abstract class AppUrls {
 
   //获取token
   static const String OAUTH2_TOKEN = HOST + '/action/openapi/token';
+
+  //获取用户信息
+  static const String OPENAPI_USER = HOST + '/action/openapi/user';
+
+  static const String MY_INFORMATION = HOST + '/action/openapi/my_information';
+
+  static const String MESSAGE_LIST = HOST + '/action/openapi/message_list';
+
 }
 
 abstract class AppInfos {
   //应用id
-  static const String CLIENT_ID = '6i4Yu6IUqXnR64em0rsJ';
+  static const String CLIENT_ID = '1uCh6Ba5rybEkDH2Jfqx';
 
   //应用密钥
-  static const String CLIENT_SECRET = 'Pb9t3prZqBYDeB9DjTvmCzGLu7EFJyt9';
+  static const String CLIENT_SECRET = 'VBmo1ewIy9CcVPME3vdR2YEspMLSVfsG';
 
   //回调地址
   static const String REDIRECT_URI = 'https://www.dongnaoedu.com/';
