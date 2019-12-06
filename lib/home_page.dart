@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _pages;
   PageController _pageController;
 
-  //TODO 在initState()方法中写初始化，必须重新运行Run 不能用热重载
+  /// 在initState()方法中写初始化，必须重新运行Run 不能用热重载
   @override
   void initState() {
     super.initState();
@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    //SafeArea 可以适配刘海屏等异形屏
+    //嵌套SafeArea 可以适配刘海屏等异形屏
     return Scaffold(
       appBar: AppBar(
         //阴影

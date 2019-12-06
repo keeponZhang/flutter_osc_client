@@ -41,13 +41,27 @@ class MyDrawer extends StatelessWidget {
 //            height: 50.0,
 //            padding: const EdgeInsets.only(left: 16.0),
 //            child: Row(
+//            //主轴上的对齐方式 将children放置在主轴的末尾
+////              mainAxisAlignment: MainAxisAlignment.end,
+////              //纵轴上的对齐方式 将children放置在主轴的末尾
+////              crossAxisAlignment: CrossAxisAlignment.start,
+//              //控住一行的高度，max：最大化主轴方向的可用空间；min：与max相反，是最小化主轴方向的可用空间；
+////              mainAxisSize: MainAxisSize.min,
 //              children: <Widget>[
 //                Icon(menuIcons[index]),
 //                SizedBox(width: 10.0,),
 //                Text(
 //                  menuTitles[index],
 //                ),
-//                Icon(Icons.arrow_forward_ios),
+//                Expanded(
+//                  child:Padding(
+//                    padding: const EdgeInsets.all(8.0),
+//                    child: Container(
+//                      alignment:Alignment.centerRight,
+//                      child:  Icon(Icons.arrow_forward_ios),
+//                    ),
+//                  ) ,
+//                )
 //              ],
 //
 //

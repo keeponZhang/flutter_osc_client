@@ -11,6 +11,11 @@ class _DrawerSettingPageState extends State<DrawerSettingPage> {
     return Scaffold(
 
       appBar: AppBar(
+        //显示左侧的小箭头 默认true 显示
+        automaticallyImplyLeading: true,
+        iconTheme: IconThemeData(
+          color: Colors.white,
+        ) ,
         title: Text(
             "设置"
         ),
