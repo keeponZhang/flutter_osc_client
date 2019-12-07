@@ -9,6 +9,8 @@ import 'package:flutter_osc_client/pages/profile_detail_page.dart';
 import 'package:flutter_osc_client/utils/data_utils.dart';
 import 'package:flutter_osc_client/utils/net_utils.dart';
 
+import 'my_message_page.dart';
+
 class HomeProfilePage extends StatefulWidget {
   @override
   _HomeProfilePageState createState() => _HomeProfilePageState();
@@ -123,7 +125,20 @@ class _HomeProfilePageState extends State<HomeProfilePage> {
             leading: Icon(menuIcons[index]),
             title: Text(menuTitles[index]),
             trailing: Icon(Icons.arrow_forward_ios),
-            onTap: () {},
+            onTap: () {
+              DataUtils.isLogin().then((isLogin) {
+                if (isLogin) {
+                  switch (index) {
+                    case 0:
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => MyMessagePage()));
+                      break;
+                  }
+                } else {
+                  _login();
+                }
+              });
+            },
           );
         },
         separatorBuilder: (context, index) {
@@ -170,17 +185,16 @@ class _HomeProfilePageState extends State<HomeProfilePage> {
                       height: 60.0,
                     ),
               onTap: () {
-                DataUtils.isLogin().then((isLogin){
-                  if(isLogin){
+                DataUtils.isLogin().then((isLogin) {
+                  if (isLogin) {
                     //详情
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (context) => ProfileDetailPage()));
-                  }else{
+                  } else {
                     //执行登录
                     _login();
                   }
                 });
-
               },
             ),
             SizedBox(
