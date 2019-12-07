@@ -105,4 +105,5 @@ class _HomeDiscoveryPageState extends State<HomeDiscoveryPage> {
 
 Future scan() async {
   String barcode =  await BarcodeScanner.scan();
+  print('barcode: $barcode');
 }

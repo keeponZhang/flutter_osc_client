@@ -24,6 +24,10 @@ abstract class AppUrls {
   static const String MESSAGE_LIST = HOST + '/action/openapi/message_list';
   static const String NEWS_LIST = HOST + '/action/openapi/news_list';
 
+  static const String NEWS_DETAIL = HOST + '/action/openapi/news_detail';
+  static const String TWEET_LIST = HOST + '/action/openapi/tweet_list';
+  static const String TWEET_PUB = HOST + '/action/openapi/tweet_pub';
+
 }
 
 abstract class AppInfos {
