@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_osc_client/constants/constants.dart' show AppUrls;
+import 'package:flutter_osc_client/common/event_bus.dart';
+import 'package:flutter_osc_client/constants/constants.dart';
+import 'package:flutter_osc_client/pages/login_web_page.dart';
 import 'package:flutter_osc_client/utils/data_utils.dart';
-import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_osc_client/utils/net_utils.dart';
+import 'package:flutter_osc_client/widget/tweet_list_item.dart';
 import 'package:flutter/cupertino.dart';
 
 class HomeTweetPage extends StatefulWidget {
@@ -14,283 +14,220 @@ class HomeTweetPage extends StatefulWidget {
   _HomeTweetPageState createState() => _HomeTweetPageState();
 }
 
-class _HomeTweetPageState extends State<HomeTweetPage> {
-  TextEditingController _controller = new TextEditingController();
-  List<File> fileList = List<File>();
-  Future<File> _imageFile;
-  bool isLoading = false;
+class _HomeTweetPageState extends State<HomeTweetPage>
+    with SingleTickerProviderStateMixin {
+  List _tabTitles = ['最新', '热门'];
+  List latestTweetList;
+  List hotTweetList;
+  int curPage = 1;
+  ScrollController _controller = ScrollController();
+  TabController _tabController;
+  bool isLogin = false;
 
-  Widget _bodyWidget() {
-    List<Widget> _body = [
-      ListView(
-        children: <Widget>[
-          //动弹内容输入框
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                  hintText: '今天想动弹什么？?',
-                  hintStyle: TextStyle(
-                    color: Color(0xaaaaaaaa),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(
-                      const Radius.circular(10.0),
-                    ),
-                  )),
-              maxLength: 150,
-              maxLines: 6,
-            ),
-          ),
-          //图片显示
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 4,
-            children: List.generate(
-              fileList.length + 1,
-                  (index) {
-                if (index == fileList.length) {
-                  return Builder(
-                    builder: (context) {
-                      return GestureDetector(
-                        onTap: () {
-                          //选择图片
-                          _pickImage(context);
-                        },
-                        child: Image.asset(
-                          'assets/images/ic_add_pics.png',
-                        ),
-                      );
-                    },
-                  );
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabTitles.length, vsync: this);
+    _controller.addListener(() {
+      var maxScroll = _controller.position.maxScrollExtent;
+      var pixels = _controller.position.pixels;
+      if (maxScroll == pixels) {
+        curPage++;
+        getTweetList(isLoadMore: false, isHot: false);
+      }
+    });
+    DataUtils.isLogin().then((isLogin) {
+      if (!mounted) return;
+      setState(() {
+        this.isLogin = isLogin;
+      });
+    });
+    eventBus.on<LoginEvent>().listen((event) {
+      if (!mounted) return;
+      setState(() {
+        this.isLogin = isLogin;
+      });
+      getTweetList(isLoadMore: false, isHot: false);
+    });
+    eventBus.on<LogoutEvent>().listen((event) {
+//      _showUerInfo();
+    });
+  }
+
+  getTweetList({bool isLoadMore, bool isHot}) async {
+    DataUtils.isLogin().then((isLogin) {
+      if (isLogin) {
+        DataUtils.getAccessToken().then((accessToken) {
+          if (accessToken == null || accessToken.length == 0) {
+            return;
+          }
+          Map<String, dynamic> params = Map<String, dynamic>();
+          params['access_token'] = accessToken;
+          params['user'] = isHot ? -1 : 0;
+          params['page'] = curPage;
+          params['pageSize'] = 10;
+          params['dataType'] = 'json';
+
+          NetUtils.get(AppUrls.TWEET_LIST, params).then((data) {
+            print('TWEET_LIST: $data');
+            if (data != null && data.isNotEmpty) {
+              Map<String, dynamic> map = json.decode(data);
+              List _tweetList = map['tweetlist'];
+              if (!mounted) return;
+              setState(() {
+                if (isLoadMore) {
+                  if (isHot) {
+                    latestTweetList.addAll(_tweetList);
+                    hotTweetList.addAll(_tweetList);
+                  }
+                } else {
+                  if (isHot) {
+                    hotTweetList = _tweetList;
+                  } else {
+                    latestTweetList = _tweetList;
+                  }
                 }
-                return GestureDetector(
-                  onTap: () {
-                    //取消图片
-                    setState(() {
-                      fileList.removeAt(index);
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.file(
-                      fileList[index],
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      )
-    ];
+              });
+            }
+          });
+        });
+      }
+    });
+  }
 
-    if (isLoading) {
-      _body.add(
-        Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width / 3,
-            height: MediaQuery.of(context).size.width / 3,
-            decoration: BoxDecoration(
-              color: Color(0x88000000),
-              borderRadius: BorderRadius.all(Radius.circular(10.0)),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  CupertinoActivityIndicator(),
-                  SizedBox(
-                    height: 10.0,
-                  ),
-                  Text('努力动弹中...', style: TextStyle(color: Colors.white))
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Stack(
-      children: _body,
-    );
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+    _tabController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomPadding: false, //防止键盘弹出 导致超出屏幕
-      appBar: AppBar(
-        elevation: 0.0,
-        title: Text(
-          '弹一弹',
-          style: TextStyle(color: Colors.white),
-        ),
-        iconTheme: IconThemeData(color: Colors.white),
-        actions: <Widget>[
-          Builder(
-            builder: (context) {
-              return FlatButton(
-                onPressed: () {
-                  //发布动弹
-                  DataUtils.getAccessToken().then((token) {
-                    //网络请求
-                    _publishTweet(context, token);
-                  });
-                },
+    if (!isLogin) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('必须登录才能查看动弹信息！'),
+            InkWell(
+              child: Container(
+                padding: const EdgeInsets.all(10.0),
                 child: Text(
-                  '发送',
-                  style: TextStyle(color: Colors.white, fontSize: 20.0),
+                  '马上登录',
+                  style: TextStyle(color: Color(0xff0000ff)),
                 ),
+              ),
+              onTap: () async {
+                //TODO 跳转登录
+                final result = await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => LoginWebPage()));
+                if (result != null && result == 'refresh') {
+                  //登录成功
+                  eventBus.fire(LoginEvent());
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: <Widget>[
+        //tabbar
+        Container(
+          color: Color(AppColors.APP_THEME),
+          child: TabBar(
+              controller: _tabController,
+              indicatorColor: Color(0xffffffff),
+              labelColor: Color(0xffffffff),
+              tabs: _tabTitles.map((title) {
+                return Tab(
+                  text: title,
+                );
+              }).toList()),
+        ),
+        Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [_buildLatestTweetList(), _buildHotTweetList()],
+            ))
+        //list
+      ],
+    );
+  }
+  Future<Null> _pullToRefresh() async {
+    curPage = 1;
+    getTweetList(isLoadMore: false, isHot: false);
+    return null;
+  }
+
+  Widget _buildLatestTweetList() {
+    if (latestTweetList == null) {
+      getTweetList(isLoadMore: false, isHot: false);
+      return new Center(
+        child: new CircularProgressIndicator(),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _pullToRefresh,
+      child: ListView.separated(
+          controller: _controller,
+          itemBuilder: (context, index) {
+            if (index == latestTweetList.length) {
+              return Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        CupertinoActivityIndicator(),
+                        SizedBox(
+                          width: 20.0,
+                        ),
+                        Text('正在加载...'),
+                      ],
+                    )),
               );
-            },
-          )
-        ],
-      ),
-      body: FutureBuilder(
-        future: _imageFile,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done &&
-              snapshot.data != null &&
-              _imageFile != null) {
-            fileList.add(snapshot.data);
-            _imageFile = null;
-          }
-          return _bodyWidget();
-        },
-      ),
+            }
+            return TweetListItem(tweetData: latestTweetList[index]);
+          },
+          separatorBuilder: (context, index) {
+            return Container(
+              height: 10.0,
+              color: Colors.grey[200],
+            );
+          },
+          itemCount: latestTweetList.length + 1),
     );
   }
 
-  void _publishTweet(BuildContext context, String token) async {
-    if (token == null) {
-      _showSnackBar(context, '未登录！');
-      return;
+  Widget _buildHotTweetList() {
+    if (hotTweetList == null) {
+      getTweetList(isLoadMore: false, isHot: true);
+      return Center(
+        child: CupertinoActivityIndicator(),
+      );
     }
-    String tweetContent = _controller.text;
-    if (tweetContent == null || tweetContent.isEmpty) {
-      //未输入动弹内容
-      _showSnackBar(context, '请输入动弹内容！');
-      return;
-    }
-    Map<String, String> params = new Map();
-    params['msg'] = tweetContent;
-    params['access_token'] = token;
-    print('动弹内容：$tweetContent');
 
-    var multipartRequest =
-    http.MultipartRequest('POST', Uri.parse(AppUrls.TWEET_PUB));
-    multipartRequest.fields.addAll(params);
-    if (fileList.length > 0) {
-      for (File file in fileList) {
-        var stream = http.ByteStream(DelegatingStream.typed(file.openRead()));
-        var length = await file.length();
-        print('${file.path}');
-        var fileName = file.path.substring(file.path.lastIndexOf('/') + 1);
-        // MultipartFile(this.field, Stream<List<int>> stream, this.length,
-        //{this.filename, MediaType contentType})
-        multipartRequest.files
-            .add(http.MultipartFile('img', stream, length, filename: fileName));
-      }
-    }
-    setState(() {
-      isLoading = true;
-    });
-    var streamedResponse = await multipartRequest.send();
-    streamedResponse.stream.transform(utf8.decoder).listen((response) {
-      print('response: $response');
-      setState(() {
-        isLoading = false;
-      });
-      if (response != null) {
-        var decode = json.decode(response);
-        var errorCode = decode['error'];
-        if (mounted) {
-          setState(() {
-            if (errorCode != null && errorCode == '200') {
-              fileList.clear();
-              _controller.clear();
-              _showSnackBar(context, '发布成功!');
-            } else {
-              _showSnackBar(context, '发布失败: ${decode['error_description']}');
-            }
-          });
-        }
-      }
-    });
-  }
-
-  void _showSnackBar(BuildContext context, String message) {
-    Scaffold.of(context).showSnackBar(new SnackBar(
-      content: new Text(message),
-      duration: Duration(milliseconds: 500),
-    ));
-  }
-
-  void _pickImage(BuildContext context) {
-    // 如果已添加了9张图片，则提示不允许添加更多
-    num size = fileList.length;
-    if (size >= 9) {
-      Scaffold.of(context).showSnackBar(new SnackBar(
-        content: new Text("最多只能添加9张图片！"),
-      ));
-      return;
-    }
-    showModalBottomSheet<void>(
-        context: context,
-        builder: (context) {
-          return new Container(
-              height: 121.0,
-              child: new Column(
-                children: <Widget>[
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      if (mounted) {
-                        setState(() {
-                          _imageFile =
-                              ImagePicker.pickImage(source: ImageSource.camera);
-                        });
-                      }
-                    },
-                    child: Container(
-                      height: 60.0,
-                      child: Center(
-                        child: Text(
-                          '相机拍照',
-                          style: TextStyle(fontSize: 20.0),
-                        ),
-                      ),
-                    ),
-                  ),
-                  new Divider(
-                    height: 1.0,
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      if (mounted) {
-                        setState(() {
-                          _imageFile = ImagePicker.pickImage(
-                              source: ImageSource.gallery);
-                        });
-                      }
-                    },
-                    child: Container(
-                      height: 60.0,
-                      child: Center(
-                        child: Text(
-                          '图库选择照片',
-                          style: TextStyle(fontSize: 20.0),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ));
-        });
+    return ListView.separated(
+        itemBuilder: (context, index) {
+          if (index == hotTweetList.length) {
+            return Container(
+              padding: const EdgeInsets.all(10.0),
+              color: Color(0xaaaaaaaa),
+              child: Center(child: Text('没有更多数据了')),
+            );
+          }
+          return TweetListItem(tweetData: hotTweetList[index]);
+        },
+        separatorBuilder: (context, index) {
+          return Container(
+            height: 10.0,
+            color: Color(0xaaaaaaaa),
+          );
+        },
+        itemCount: hotTweetList.length + 1);
   }
 }
