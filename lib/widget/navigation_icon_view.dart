@@ -28,5 +28,5 @@ class NavigationIconView {
               width: 20.0,
               height: 20.0,
             ),
-            title: Text(title));
+            label: (title));
 }

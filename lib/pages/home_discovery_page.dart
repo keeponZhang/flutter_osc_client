@@ -1,5 +1,5 @@
 
-import 'package:barcode_scan/barcode_scan.dart';
+// import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_osc_client/pages/shake_page.dart';
 
@@ -104,6 +104,6 @@ class _HomeDiscoveryPageState extends State<HomeDiscoveryPage> {
 }
 
 Future scan() async {
-  String barcode =  await BarcodeScanner.scan();
-  print('barcode: $barcode');
+  // String barcode =  await BarcodeScanner.scan();
+  // print('barcode: $barcode');
 }

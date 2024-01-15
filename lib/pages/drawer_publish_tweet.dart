@@ -122,7 +122,7 @@ class _DrawerPublishTweetPageState extends State<DrawerPublishTweetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomPadding: false, //防止键盘弹出 导致超出屏幕
+      resizeToAvoidBottomInset: false, //防止键盘弹出 导致超出屏幕
       appBar: AppBar(
         elevation: 0.0,
         title: Text(
